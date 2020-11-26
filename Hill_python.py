@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import random
 from scipy.signal import convolve2d
 import math
-from scipy import misc
 import os
 from PIL import Image
 import cv2
@@ -11,19 +10,25 @@ import cv2
 coverPath = 'C:/Users/cq/Pictures/test/'
 stegoPath = 'C:/Users/cq/Pictures/testS'
 
+
 def HILL_cost(cover_path):
 
-    HF1 = np.array([[-1, 2, -1],[2, -4, 2],[-1, 2, -1]])
-    W1_kernel = np.ones((3, 3), np.float32)/9 #avg filter kernel
-
-    cover = misc.imread(cover_path, flatten=False, mode='L')
+    HF1 = np.array([[-1., 2., -1.],[2., -4., 2.],[-1., 2., -1.]])
+    W1_kernel = np.ones((3, 3), np.float16)/9. #avg filter kernel
+    
+    cover = cv2.imread(cover_path, 0)
+    cover = (cover/255.).astype('float16')
     k, l = cover.shape
 
     S1, S1_ = HF1.shape
-    padSize = S1
+    padSize = max(S1, S1_)
     coverPadded = np.lib.pad(cover, padSize, 'symmetric')
     R1 = convolve2d(coverPadded, HF1, mode='same')
+    cv2.imwrite('C:/Users/cq/Pictures/testS/testR1.png', R1)
     W1 = convolve2d(np.abs(R1), W1_kernel, mode='same')
+    cv2.imwrite('C:/Users/cq/Pictures/testS/testW1.png', W1)
+
+
     if S1 % 2 == 0:
         W1 = np.roll(W1, [1, 0])
     if S1_ % 2 == 0:
@@ -35,14 +40,14 @@ def HILL_cost(cover_path):
     S_W2, S_W2_ = W1.shape
     
     divisor = np.ones((S_W2, S_W2_))
-    bias = np.add(W1, 1.0000e-10)
+    bias = np.add(W1, 10e-10)
     rho = divisor/np.add(W1, bias)
-    #misc.imsave('C:/Users/cq/Pictures/testS/testrho.png', rho)
+    #cv2.imwrite('C:/Users/cq/Pictures/testS/testrho.png', rho)
 
-    HW_kernel = np.ones((15, 15), np.float32)/225
-    cost = cv2.filter2D(rho.astype('float32'), -1, HW_kernel, borderType=cv2.BORDER_CONSTANT)
+    HW_kernel = np.ones((15, 15), np.float)/225
+    cost = cv2.filter2D(rho.astype('float'), -1, HW_kernel, borderType=cv2.BORDER_CONSTANT)
 
-    #misc.imsave('C:/Users/cq/Pictures/testS/test.png', cost)
+    cv2.imwrite('C:/Users/cq/Pictures/testS/test.png', cost)
 
 for home, dirs, files in os.walk(coverPath):
     for file in files:
